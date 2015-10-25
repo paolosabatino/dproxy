@@ -28,5 +28,6 @@ int btcount (struct node *);
 void btprint (struct node *);
 struct node *btbalance (struct node *);
 void btprune (struct node **, unsigned int);
+int btdepth (struct node *);
 
 #endif

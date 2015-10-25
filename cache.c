@@ -110,6 +110,7 @@ void cache_print (struct cache *cache) {
 	pthread_mutex_lock(&cache->mutex);
 	btprint(cache->tree);
 	printf ("Cached domains count: %d\n", btcount(cache->tree));
+	printf ("Binary tree maximum depth: %d\n", btdepth(cache->tree));
 	pthread_mutex_unlock(&cache->mutex);
 	
 }

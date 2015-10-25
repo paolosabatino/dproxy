@@ -188,15 +188,6 @@ void btdelete(struct node **tree, char *host, unsigned short int type) {
 
 }
 
-int btcount (struct node *tree) {
-
-    if (tree == NULL)
-        return 0;
-
-    return btcount(tree->left) + btcount(tree->right) + 1;
-
-}
-
 void btprint (struct node *tree) {
 
     if (tree == NULL)
@@ -220,6 +211,9 @@ void _copy_balanced_tree (struct node *origin_tree, struct node **balanced) {
 
 }
 
+/**
+ * Creates a balanced *copy* of a binary tree recreating all the nodes
+ */
 struct node *btbalance (struct node *origin_tree) {
 
     struct node *balanced = NULL;
@@ -230,6 +224,9 @@ struct node *btbalance (struct node *origin_tree) {
 
 }
 
+/**
+ * Removes all the nodes that have the expires field below given timestamp
+ */
 void btprune (struct node **tree, unsigned int timestamp) {
 	
 	if ((*tree) == NULL)
@@ -239,9 +236,42 @@ void btprune (struct node **tree, unsigned int timestamp) {
 	btprune (&(*tree)->right, timestamp);
 	
 	if (timestamp > (*tree)->payload.expires) {
-		fprintf (stderr, "Removing %s because expired for %d seconds\n", (*tree)->payload.host, timestamp - (*tree)->payload.expires);
 		_remove_node(tree, (*tree));
 		return;
 	}
+	
+}
+
+/**
+ * Calculated the number of node of the binary tree structure
+ */
+int btcount (struct node *tree) {
+
+    if (tree == NULL)
+        return 0;
+
+    return btcount(tree->left) + btcount(tree->right) + 1;
+
+}
+
+
+/**
+ * Calculates the maximum depth of the binary tree structure
+ */
+int btdepth (struct node *tree) {
+	
+	int left_depth;
+	int right_depth;
+	
+	if (tree == NULL)
+		return 0;
+		
+	left_depth = btdepth(tree->left);
+	right_depth = btdepth(tree->right);
+	
+	if (left_depth > right_depth)
+		return left_depth + 1;
+	else
+		return right_depth + 1;
 	
 }
