@@ -12,7 +12,7 @@ struct cache *cache_new () {
 	cache = (struct cache *)malloc(sizeof(struct cache));
 	
 	cache->tree = NULL;
-	pthread_mutex_init (&cache->mutex, NULL);
+	pthread_rwlock_init (&cache->rwlock, NULL);
 	
 	return cache;
 	
@@ -23,14 +23,14 @@ void cache_destroy (struct cache *cache) {
 	if (cache == NULL);
 		return;
 		
-	pthread_mutex_lock(&cache->mutex);
+	pthread_rwlock_wrlock(&cache->rwlock);
 	
 	btdestroy (cache->tree);
 	cache->tree = NULL;
 	
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_rwlock_unlock(&cache->rwlock);
 	
-	pthread_mutex_destroy(&cache->mutex);
+	pthread_rwlock_destroy(&cache->rwlock);
 	
 	free (cache);
 	
@@ -43,18 +43,18 @@ int cache_search (struct cache *cache, char *host, unsigned short int type, unsi
 	/*
 	 * -- Entering cache critical section
 	 */
-	pthread_mutex_lock (&cache->mutex);
+	pthread_rwlock_rdlock (&cache->rwlock);
 	
 	node = btsearch(cache->tree, host, type);
 
 	if (node == NULL) {
-		pthread_mutex_unlock (&cache->mutex);
+		pthread_rwlock_unlock (&cache->rwlock);
 		return 0;
 	} 
 	
 	if (expires > node->payload.expires) {
 		debug ("Item expired %d, now %d\n", node->payload.expires, expires);
-		pthread_mutex_unlock (&cache->mutex);
+		pthread_rwlock_unlock (&cache->rwlock);
 		return 0;
 	}
 	
@@ -64,7 +64,7 @@ int cache_search (struct cache *cache, char *host, unsigned short int type, unsi
 	/*
 	 * Exiting critical section
 	 */
-	pthread_mutex_unlock (&cache->mutex);
+	pthread_rwlock_unlock (&cache->rwlock);
 	
 	return 1;
 		
@@ -76,17 +76,17 @@ void cache_insert (struct cache *cache, char *host, unsigned short int type, uns
 	/*
 	 * Entering a critical section to add the results of the query
 	 */
-	pthread_mutex_lock(&cache->mutex);
+	pthread_rwlock_wrlock(&cache->rwlock);
 	btinsert (&cache->tree, host, type, expires, buffer, buf_len);
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_rwlock_unlock(&cache->rwlock);
 	
 }
 
 void cache_prune (struct cache *cache, unsigned int timestamp) {
 	
-	pthread_mutex_lock(&cache->mutex);
+	pthread_rwlock_wrlock(&cache->rwlock);
 	btprune (&cache->tree, timestamp);
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_rwlock_unlock(&cache->rwlock);
 	
 }
 
@@ -94,24 +94,24 @@ void cache_tidyup (struct cache *cache, unsigned int timestamp) {
 	
 	struct node *orig_tree;
 	
-	pthread_mutex_lock(&cache->mutex);
+	pthread_rwlock_wrlock(&cache->rwlock);
 	
 	btprune (&cache->tree, timestamp);
 	orig_tree = cache->tree;
 	cache->tree = btbalance(cache->tree);
 	btdestroy(orig_tree);
 	
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_rwlock_unlock(&cache->rwlock);
 	
 }
 
 void cache_print (struct cache *cache) {
 	
-	pthread_mutex_lock(&cache->mutex);
+	pthread_rwlock_rdlock(&cache->rwlock);
 	btprint(cache->tree);
 	printf ("Cached domains count: %d\n", btcount(cache->tree));
 	printf ("Binary tree maximum depth: %d\n", btdepth(cache->tree));
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_rwlock_unlock(&cache->rwlock);
 	
 }
 
@@ -119,9 +119,9 @@ unsigned int cache_count (struct cache *cache) {
 	
 	unsigned int count;
 	
-	pthread_mutex_lock(&cache->mutex);
+	pthread_rwlock_rdlock(&cache->rwlock);
 	count = btcount(cache->tree);
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_rwlock_unlock(&cache->rwlock);
 	
 	return count;
 	

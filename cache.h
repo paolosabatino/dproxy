@@ -3,7 +3,7 @@
 
 struct cache {
 	struct node *tree;
-	pthread_mutex_t mutex;
+	pthread_rwlock_t rwlock;
 };
 
 struct cache *cache_new ();
